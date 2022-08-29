@@ -76,5 +76,7 @@ class AnkiParser:
         print("The following can be copied to Quizlet import on StudySmarter:")
 
         for i, (q, a) in enumerate(self.cards.items()):
+            if a.startswith('<'):
+                continue
             sep = '\#' if i < len(self.cards) - 1 else ''
             print(f'{q}/#*#/{a}\n{sep}')
