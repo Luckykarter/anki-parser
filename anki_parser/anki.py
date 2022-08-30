@@ -5,6 +5,9 @@ from html.parser import HTMLParser
 
 
 class LineStripper(HTMLParser):
+    """
+    Class used for removing HTML tags from content
+    """
     def error(self, message):
         pass
 
@@ -20,7 +23,13 @@ class LineStripper(HTMLParser):
 
 
 class AnkiParser:
+    """
+    This class parses anki file (apkg)
+    Parsed result is a dictionary of cards {question: answer} stored in cards attribute
+    Then parsed dictionary can be used to export to other formats (such as Quizlet)
 
+    When used as a context manager - it cleans up temporary files created when file unpacked
+    """
     def __init__(self, apkg_file_path: str):
         self.suffix = 'anki2'
         self.db_file = f'db.{self.suffix}'
@@ -42,13 +51,13 @@ class AnkiParser:
         with open(self.db_file, 'wb') as f:
             f.write(self.zip_file.read(self.collection_name))
 
-    def strip_answer(self, value):
+    def strip_answer(self, value: str) -> str:
         res = value.split('\x1f')
         if len(res) < 2:
-            return None
+            return ""
         return self.remove_html(res[1])
 
-    def remove_html(self, value):
+    def remove_html(self, value: str) -> str:
         self.html_parser.feed(value)
         if not self.html_parser.fed:
             return value
@@ -57,12 +66,15 @@ class AnkiParser:
         self.html_parser.fed = []
         return v
 
-    def parse(self):
+    def parse(self) -> dict:
+        """
+        Unpacks apkg and parses notes (cards) into dictionary
+        """
         self.unpack_collection()
 
         with sqlite3.connect(self.db_file) as conn:
             cursor = conn.cursor()
-            output = cursor.execute(f"SELECT * FROM notes;")
+            output = cursor.execute("SELECT * FROM notes;")
             for row in output:
                 if len(row) < 8:
                     continue
@@ -73,6 +85,9 @@ class AnkiParser:
         return self.cards
 
     def to_quizlet(self):
+        """
+        Prints parsed cards in Quizlet format
+        """
         print("The following can be copied to Quizlet import on StudySmarter:")
 
         for i, (q, a) in enumerate(self.cards.items()):
